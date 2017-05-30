@@ -1,14 +1,8 @@
-"use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var GameObject = (function () {
     function GameObject(tag, parent) {
         this.x = 0;
@@ -29,16 +23,21 @@ var GameObject = (function () {
 var Chicken = (function (_super) {
     __extends(Chicken, _super);
     function Chicken() {
-        var _this = _super.call(this, "bird", document.body) || this;
-        _this.score = 0;
-        _this.width = 67;
-        _this.height = 110;
-        _this.speedmultiplier = 2;
-        document.getElementsByTagName("ui")[0].innerHTML = "Score: " + _this.score;
+        var _this = this;
+        _super.call(this, "bird", document.body);
+        this.observers = [];
+        this.ammo = 0;
+        this.width = 67;
+        this.height = 110;
+        this.speedmultiplier = 2;
         window.addEventListener("click", function (e) { return _this.onWindowClick(e); });
-        _this.div.addEventListener("click", function (e) { return _this.onClick(e); });
-        return _this;
+        this.div.addEventListener("click", function (e) { return _this.onClick(e); });
     }
+    Chicken.prototype.subscribe = function (o) {
+        this.observers.push(o);
+    };
+    Chicken.prototype.unsubscribe = function () {
+    };
     Chicken.prototype.update = function () {
         this.x += this.xspeed;
         this.y += this.yspeed;
@@ -49,29 +48,72 @@ var Chicken = (function (_super) {
         this.div.style.backgroundImage = "url('images/chickenwalking.gif')";
     };
     Chicken.prototype.onClick = function (e) {
-        this.div.style.backgroundImage = "url('images/chickencalling.png')";
-        this.xspeed = 0;
-        this.yspeed = 0;
-        e.stopPropagation();
+        var _this = this;
+        if (this.ammo > 0) {
+            this.ammo--;
+            this.div.style.backgroundImage = "url('images/chickencalling.png')";
+            this.xspeed = 0;
+            this.yspeed = 0;
+            for (var _i = 0, _a = this.observers; _i < _a.length; _i++) {
+                var o = _a[_i];
+                o.notify();
+            }
+            setTimeout(function () {
+                _this.div.style.backgroundImage = "url('images/chickenwalking.gif')";
+                for (var _i = 0, _a = _this.observers; _i < _a.length; _i++) {
+                    var o = _a[_i];
+                    if (o instanceof Zombie) {
+                        o.div.style.backgroundImage = "url('images/zombie.png')";
+                        o.speedmultiplier = Math.random() * 2;
+                    }
+                }
+            }, 2500);
+            e.stopPropagation();
+        }
     };
     return Chicken;
 }(GameObject));
 var Game = (function () {
     function Game() {
         var _this = this;
+        this.score = 0;
         this.zombies = new Array();
+        this.grains = new Array();
+        this.phones = new Array();
+        document.getElementsByTagName("ui")[0].innerHTML = "Score: " + this.score;
         this.chicken = new Chicken();
-        for (var c = 0; c < 10; c++) {
+        for (var z = 0; z < 10; z++) {
             this.zombies.push(new Zombie(this.chicken));
+        }
+        for (var g = 0; g < 20; g++) {
+            this.grains.push(new Grain());
+        }
+        for (var p = 0; p < 3; p++) {
+            this.phones.push(new Phone());
         }
         requestAnimationFrame(function () { return _this.gameLoop(); });
     }
     Game.prototype.gameLoop = function () {
         var _this = this;
         this.chicken.update();
+        for (var _i = 0, _a = this.grains; _i < _a.length; _i++) {
+            var grain = _a[_i];
+            if (Util.checkCollision(this.chicken, grain)) {
+                Util.removeFromGame(grain, this.grains);
+                this.score++;
+                document.getElementsByTagName("ui")[0].innerHTML = "Score: " + this.score;
+            }
+        }
+        for (var _b = 0, _c = this.phones; _b < _c.length; _b++) {
+            var phone = _c[_b];
+            if (Util.checkCollision(this.chicken, phone)) {
+                Util.removeFromGame(phone, this.grains);
+                this.chicken.ammo++;
+            }
+        }
         var hitZombie = false;
-        for (var _i = 0, _a = this.zombies; _i < _a.length; _i++) {
-            var z = _a[_i];
+        for (var _d = 0, _e = this.zombies; _d < _e.length; _d++) {
+            var z = _e[_d];
             z.update();
             if (Util.checkCollision(z, this.chicken)) {
                 hitZombie = true;
@@ -88,26 +130,24 @@ window.addEventListener("load", function () {
 var Grain = (function (_super) {
     __extends(Grain, _super);
     function Grain() {
-        var _this = _super.call(this, "grain", document.body) || this;
-        _this.width = 20;
-        _this.height = 24;
-        _this.x = Math.random() * (window.innerWidth - 20);
-        _this.y = Math.random() * (window.innerHeight - 24);
-        _this.update();
-        return _this;
+        _super.call(this, "grain", document.body);
+        this.width = 20;
+        this.height = 24;
+        this.x = Math.random() * (window.innerWidth - 20);
+        this.y = Math.random() * (window.innerHeight - 24);
+        this.update();
     }
     return Grain;
 }(GameObject));
 var Phone = (function (_super) {
     __extends(Phone, _super);
     function Phone() {
-        var _this = _super.call(this, "phone", document.body) || this;
-        _this.width = 50;
-        _this.height = 92;
-        _this.x = Math.random() * (window.innerWidth - 50);
-        _this.y = Math.random() * (window.innerHeight - 220);
-        _this.update();
-        return _this;
+        _super.call(this, "phone", document.body);
+        this.width = 50;
+        this.height = 92;
+        this.x = Math.random() * (window.innerWidth - 50);
+        this.y = Math.random() * (window.innerHeight - 220);
+        this.update();
     }
     return Phone;
 }(GameObject));
@@ -139,15 +179,19 @@ var Util = (function () {
 var Zombie = (function (_super) {
     __extends(Zombie, _super);
     function Zombie(c) {
-        var _this = _super.call(this, "zombie", document.body) || this;
-        _this.width = 67;
-        _this.height = 119;
-        _this.x = Math.random() * (window.innerWidth - 67);
-        _this.y = Math.random() * (window.innerHeight / 2) + (window.innerHeight / 2 - 67);
-        _this.speedmultiplier = Math.random() * 2;
-        _this.chicken = c;
-        return _this;
+        _super.call(this, "zombie", document.body);
+        c.subscribe(this);
+        this.width = 67;
+        this.height = 119;
+        this.x = Math.random() * (window.innerWidth - 67);
+        this.y = Math.random() * (window.innerHeight / 2) + (window.innerHeight / 2 - 67);
+        this.speedmultiplier = Math.random() * 2;
+        this.chicken = c;
     }
+    Zombie.prototype.notify = function () {
+        this.div.style.backgroundImage = "url('images/calling.png')";
+        this.speedmultiplier = 0;
+    };
     Zombie.prototype.update = function () {
         Util.setSpeed(this, this.chicken.x - this.x, this.chicken.y - this.y);
         this.x += this.xspeed;
