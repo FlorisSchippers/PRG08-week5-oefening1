@@ -3,11 +3,14 @@
 class Chicken extends GameObject implements Observable {
 
     public observers: Array<Observer> = [];
+    public score: number = 0;
     public ammo: number = 0;
 
     constructor() {
         super("bird", document.body);
 
+        this.x = 10;
+        this.y = 10;
         this.width = 67;
         this.height = 110;
         this.speedmultiplier = 2;
@@ -40,6 +43,7 @@ class Chicken extends GameObject implements Observable {
     private onClick(e: MouseEvent): void {
         if (this.ammo > 0) {
             this.ammo--;
+            document.getElementsByTagName("ui")[0].innerHTML = "x " + this.ammo + " - Score: " + this.score;
             this.div.style.backgroundImage = "url('images/chickencalling.png')";
             this.xspeed = 0;
             this.yspeed = 0;

@@ -26,7 +26,10 @@ var Chicken = (function (_super) {
         var _this = this;
         _super.call(this, "bird", document.body);
         this.observers = [];
+        this.score = 0;
         this.ammo = 0;
+        this.x = 10;
+        this.y = 10;
         this.width = 67;
         this.height = 110;
         this.speedmultiplier = 2;
@@ -51,6 +54,7 @@ var Chicken = (function (_super) {
         var _this = this;
         if (this.ammo > 0) {
             this.ammo--;
+            document.getElementsByTagName("ui")[0].innerHTML = "x " + this.ammo + " - Score: " + this.score;
             this.div.style.backgroundImage = "url('images/chickencalling.png')";
             this.xspeed = 0;
             this.yspeed = 0;
@@ -76,12 +80,15 @@ var Chicken = (function (_super) {
 var Game = (function () {
     function Game() {
         var _this = this;
-        this.score = 0;
         this.zombies = new Array();
         this.grains = new Array();
         this.phones = new Array();
-        document.getElementsByTagName("ui")[0].innerHTML = "Score: " + this.score;
+        this.phone = new Phone();
+        this.phone.x = 0.5 * window.innerWidth - 375;
+        this.phone.y = 10;
+        this.phone.update();
         this.chicken = new Chicken();
+        document.getElementsByTagName("ui")[0].innerHTML = "x " + this.chicken.ammo + " - Score: " + this.chicken.score;
         for (var z = 0; z < 10; z++) {
             this.zombies.push(new Zombie(this.chicken));
         }
@@ -100,15 +107,17 @@ var Game = (function () {
             var grain = _a[_i];
             if (Util.checkCollision(this.chicken, grain)) {
                 Util.removeFromGame(grain, this.grains);
-                this.score++;
-                document.getElementsByTagName("ui")[0].innerHTML = "Score: " + this.score;
+                this.chicken.score++;
+                this.chicken.speedmultiplier += 0.5;
+                document.getElementsByTagName("ui")[0].innerHTML = "x " + this.chicken.ammo + " - Score: " + this.chicken.score;
             }
         }
         for (var _b = 0, _c = this.phones; _b < _c.length; _b++) {
             var phone = _c[_b];
             if (Util.checkCollision(this.chicken, phone)) {
-                Util.removeFromGame(phone, this.grains);
+                Util.removeFromGame(phone, this.phones);
                 this.chicken.ammo++;
+                document.getElementsByTagName("ui")[0].innerHTML = "x " + this.chicken.ammo + " - Score: " + this.chicken.score;
             }
         }
         var hitZombie = false;
@@ -116,6 +125,8 @@ var Game = (function () {
             var z = _e[_d];
             z.update();
             if (Util.checkCollision(z, this.chicken)) {
+                this.chicken.div.style.height = "119px";
+                this.chicken.div.style.backgroundImage = "url('images/zombie.png')";
                 hitZombie = true;
             }
         }

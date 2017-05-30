@@ -1,8 +1,7 @@
 /// <reference path="gameobject.ts" />
 
-
 class Phone extends GameObject {
-        
+
     constructor() {
         super("phone", document.body);
         this.width = 50;
@@ -12,5 +11,4 @@ class Phone extends GameObject {
 
         this.update();
     }
-
 }
